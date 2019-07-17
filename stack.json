@@ -1,0 +1,88 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "AWS CloudFormation Template to create neccesary resources for the requester of VPC peer connection.",
+  "Resources": {
+    "PeerConnection": {
+      "Type": "AWS::EC2::VPCPeeringConnection",
+      "Properties": {
+        "VpcId": {
+          "Ref": "PeerRequesterId"
+        },
+        "PeerVpcId": {
+          "Ref": "PeerAccepterId"
+        },
+        "PeerRegion": {
+          "Ref": "PeerAccepterRegion"
+        },
+        "PeerOwnerId": {
+          "Ref": "PeerAccepterAccountId"
+        },
+        "PeerRoleArn": {
+          "Ref": "PeerAccepterRoleArn"
+        }
+      }
+    },
+    "PeerRoute": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "VpcPeeringConnectionId": {
+          "Ref": "PeerConnection"
+        },
+        "DestinationCidrBlock": {
+          "Ref": "PeerAccepterCidrBlock"
+        },
+        "RouteTableId": {
+          "Ref": "PeerRequesterRouteTableId"
+        }
+      }
+    }
+  },
+  "Parameters": {
+    "PeerRequesterId": {
+      "Type": "String",
+      "Default": "",
+      "Description": "VPC ID of the requester VPC."
+    },
+    "PeerAccepterId": {
+      "Type": "String",
+      "Default": "",
+      "Description": "VPC ID of the accepter VPC."
+    },
+    "PeerAccepterRegion": {
+      "Type": "String",
+      "Default": "",
+      "Description": "Region code for the accepter VPC."
+    },
+    "PeerAccepterAccountId": {
+      "Type": "String",
+      "Default": "",
+      "Description": "AWS Account ID of the owner of the accepter VPC."
+    },
+    "PeerAccepterRoleArn": {
+      "Type": "String",
+      "Default": "",
+      "Description": "Amazon Resource Name (ARN) of the VPC peer role for the peering connection in another AWS account."
+    },
+    "PeerRequesterRouteTableId": {
+      "Type": "String",
+      "Default": "",
+      "Description": "Route Table ID of the owner of the requester VPC."
+    },
+    "PeerAccepterCidrBlock": {
+      "Type": "String",
+      "Default": "",
+      "Description": "CIDR Block of the accepter VPC.",
+      "MinLength": "9",
+      "MaxLength": "18",
+      "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+      "ConstraintDescription": "Must be a valid IP CIDR range of the form x.x.x.x/x."
+    }
+  },
+  "Outputs": {
+    "PeerConnectionId": {
+      "Value": {
+        "Ref": "PeerConnection"
+      }
+    }
+  }
+}
