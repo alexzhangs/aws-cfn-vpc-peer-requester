@@ -70,7 +70,7 @@
     },
     "PeerAccepterCidrBlock": {
       "Type": "String",
-      "Default": "",
+      "Default": "10.0.0.0/16",
       "Description": "CIDR Block of the accepter VPC.",
       "MinLength": "9",
       "MaxLength": "18",
