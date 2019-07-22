@@ -34,14 +34,178 @@
         "RouteTableId": {
           "Ref": "PeerRequesterRouteTableId"
         }
+      },
+      "DependsOn": [
+        "PeerConnection"
+      ]
+    },
+    "LambdaExecutionRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+            "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "lambda.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Path": "/",
+        "Policies": [
+          {
+          "PolicyName": "root",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                "Resource": "arn:aws:logs:*:*:*"
+              }
+            ]
+          }
+        }]
       }
+    },
+    "LambdaFunctionForPeerRoute": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": {
+            "Fn::Join": [
+              "\n",
+              [
+                "import json",
+                "import boto3",
+                "import logging",
+                "logger = logging.getLogger()",
+                "def send_sqs_msg(event, context):",
+                "    logger.info('======')",
+                "    logger.info(event)",
+                "    logger.info('======')",
+                "    try:",
+                "        request_type = event['RequestType']",
+                "        properties = event['ResourceProperties']",
+                "        msg = {}",
+                "        msg['request_type'] = request_type",
+                "        msg['peering_requester_cidr'] = properties['PeerRequesterCidrBlock']",
+                "        msg['peering_connection_id'] = properties['PeerConnection']",
+                "        if request_type == 'Create':",
+                "            logger.info('Sending SQS message to create peer route')",
+                "            sqs = boto3.client('sqs')",
+                "            sqs.send_message(",
+                "                QuereUrl=properties['PeerAccepterSqsQueueUrl'],",
+                "                MessageBody=json.dumps(msg)",
+                "            )",
+                "        elif request_type in ['Delete', 'Update']:",
+                "            logger.info('Nothing to do with {}, skipped.'.format(request_type)",
+                "        else:",
+                "            err = Unsupported request type: {0}'.format(request_type)",
+                "            logger.error(err)",
+                "            cfnresponse.send(event, context, cfnresponse.FAILED, {'error': err})",
+                "            return",
+                "    except Excpetion as e:",
+                "        logger.error(e)",
+                "        cfnresponse.send(event, context, cfnresponse.FAILED, {'error': str(e)})",
+                "        return",
+                "    cfnresponse.send(event, context, cfnresponse.SUCCESS, response)"
+              ]
+            ]
+          }
+        },
+        "Handler": "index.send_sqs_msg",
+        "Runtime": "python2.7",
+        "Timeout": "30",
+        "Role": {
+          "Fn::GetAtt": [
+            "LambdaExecutionRole",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "LambdaExecutionRole"
+      ]
+    },
+    "CustomResource": {
+      "Type": "AWS::CloudFormation::CustomResource",
+      "Properties": {
+        "ServiceToken": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:aws:lambda:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":function:",
+              {
+                "Ref": "LambdaFunctionForPeerRoute"
+              }
+            ]
+          ]
+        },
+        "PeerAccepterSqsQueueUrl": {
+          "Ref": "PeerAccepterSqsQueueUrl"
+        },
+        "PeerRequesterCidrBlock": {
+          "Ref": "PeerRequesterCidrBlock"
+        },
+        "PeerConnectionId": {
+          "Ref": "PeerConnection"
+        }
+      },
+      "DependsOn": [
+        "LambdaFunctionForPeerRoute",
+        "PeerConnection"
+      ]
     }
   },
   "Parameters": {
+    "NS": {
+      "Type": "String",
+      "Default": "Foo",
+      "Description": "Enter a Name Space for Stack. Default is 'Foo'."
+    },
+    "NSLowerCase": {
+      "Type": "String",
+      "Default": "foo",
+      "Description": "Lower case of value of NS. Default is 'foo'."
+    },
     "PeerRequesterId": {
       "Type": "String",
       "Default": "",
       "Description": "VPC ID of the requester VPC."
+    },
+    "PeerRequesterCidrBlock": {
+      "Type": "String",
+      "Default": "10.0.0.0/16",
+      "Description": "CIDR Block of the requester VPC.",
+      "MinLength": "9",
+      "MaxLength": "18",
+      "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+      "ConstraintDescription": "Must be a valid IP CIDR range of the form x.x.x.x/x."
+    },
+    "PeerRequesterRouteTableId": {
+      "Type": "String",
+      "Default": "",
+      "Description": "Route Table ID of the owner of the requester VPC."
     },
     "PeerAccepterId": {
       "Type": "String",
@@ -63,11 +227,6 @@
       "Default": "",
       "Description": "Amazon Resource Name (ARN) of the VPC peer role for the peering connection in another AWS account."
     },
-    "PeerRequesterRouteTableId": {
-      "Type": "String",
-      "Default": "",
-      "Description": "Route Table ID of the owner of the requester VPC."
-    },
     "PeerAccepterCidrBlock": {
       "Type": "String",
       "Default": "10.0.0.0/16",
@@ -76,6 +235,11 @@
       "MaxLength": "18",
       "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
       "ConstraintDescription": "Must be a valid IP CIDR range of the form x.x.x.x/x."
+    },
+    "PeerAccepterSqsQueueUrl": {
+      "Type": "String",
+      "Default": "",
+      "Description": "AWS SQS quere URL of the accepter."
     }
   },
   "Outputs": {
