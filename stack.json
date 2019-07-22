@@ -116,11 +116,9 @@
                 "            err = Unsupported request type: {0}'.format(request_type)",
                 "            logger.error(err)",
                 "            cfnresponse.send(event, context, cfnresponse.FAILED, {'error': err})",
-                "            return",
                 "    except Excpetion as e:",
                 "        logger.error(e)",
                 "        cfnresponse.send(event, context, cfnresponse.FAILED, {'error': str(e)})",
-                "        return",
                 "    cfnresponse.send(event, context, cfnresponse.SUCCESS, response)"
               ]
             ]
