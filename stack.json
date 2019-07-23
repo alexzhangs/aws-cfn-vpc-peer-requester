@@ -6,7 +6,6 @@
       "Type": "AWS::EC2::VPCPeeringConnection",
       "Properties": {
         "VpcId": {
-          "Ref": "PeerRequesterId"
         },
         "PeerVpcId": {
           "Ref": "PeerAccepterId"
