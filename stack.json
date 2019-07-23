@@ -6,18 +6,19 @@
       "Type": "AWS::EC2::VPCPeeringConnection",
       "Properties": {
         "VpcId": {
+          "Ref": "VpcId"
         },
         "PeerVpcId": {
-          "Ref": "PeerAccepterId"
+          "Ref": "PeeringVpcId"
         },
         "PeerRegion": {
-          "Ref": "PeerAccepterRegion"
+          "Ref": "PeeringRegion"
         },
         "PeerOwnerId": {
-          "Ref": "PeerAccepterAccountId"
+          "Ref": "PeeringAccountId"
         },
         "PeerRoleArn": {
-          "Ref": "PeerAccepterRoleArn"
+          "Ref": "PeeringRoleArn"
         }
       }
     },
@@ -28,10 +29,10 @@
           "Ref": "PeerConnection"
         },
         "DestinationCidrBlock": {
-          "Ref": "PeerAccepterCidrBlock"
+          "Ref": "PeeringCidrBlock"
         },
         "RouteTableId": {
-          "Ref": "PeerRequesterRouteTableId"
+          "Ref": "RouteTableId"
         }
       },
       "DependsOn": [
@@ -86,7 +87,7 @@
         ]
       }
     },
-    "LambdaFunctionForPeerRoute": {
+    "LambdaPeeringRouteQueuePublisher": {
       "Type": "AWS::Lambda::Function",
       "Properties": {
         "Code": { "ZipFile": { "Fn::Join": [ "\n", [
@@ -104,14 +105,14 @@
           "        properties = event['ResourceProperties']",
           "        msg = {}",
           "        msg['request_type'] = request_type",
-          "        msg['peering_requester_cidr'] = properties['PeerRequesterCidrBlock']",
-          "        msg['peering_connection_id'] = properties['PeerConnectionId']",
+          "        msg['peer_requester_cidr'] = properties['CidrBlock']",
+          "        msg['peer_connection_id'] = properties['PeerConnectionId']",
           "        response = {}",
           "        if request_type == 'Create':",
           "            logger.info('Sending SQS message to create peer route')",
           "            sqs = boto3.client('sqs')",
           "            response = sqs.send_message(",
-          "                QueueUrl=properties['PeerAccepterSqsQueueUrl'],",
+          "                QueueUrl=properties['PeeringSqsQueueUrl'],",
           "                MessageBody=json.dumps(msg)",
           "            )",
           "        elif request_type in ['Delete', 'Update']:",
@@ -120,9 +121,11 @@
           "            err = 'Unsupported request type: {0}'.format(request_type)",
           "            logger.error(err)",
           "            cfnresponse.send(event, context, cfnresponse.FAILED, {'error': err})",
+          "            return",
           "    except Exception as e:",
           "        logger.error(e)",
           "        cfnresponse.send(event, context, cfnresponse.FAILED, {'error': str(e)})",
+          "        return",
           "    cfnresponse.send(event, context, cfnresponse.SUCCESS, response)"
         ] ] } },
         "Handler": "index.send_sqs_msg",
@@ -144,22 +147,22 @@
       "Properties": {
         "ServiceToken": {
           "Fn::GetAtt": [
-            "LambdaFunctionForPeerRoute",
+            "LambdaPeeringRouteQueuePublisher",
             "Arn"
           ]
         },
-        "PeerAccepterSqsQueueUrl": {
-          "Ref": "PeerAccepterSqsQueueUrl"
+        "PeeringSqsQueueUrl": {
+          "Ref": "PeeringSqsQueueUrl"
         },
-        "PeerRequesterCidrBlock": {
-          "Ref": "PeerRequesterCidrBlock"
+        "CidrBlock": {
+          "Ref": "CidrBlock"
         },
         "PeerConnectionId": {
           "Ref": "PeerConnection"
         }
       },
       "DependsOn": [
-        "LambdaFunctionForPeerRoute",
+        "LambdaPeeringRouteQueuePublisher",
         "PeerConnection"
       ]
     }
@@ -175,58 +178,58 @@
       "Default": "foo",
       "Description": "Lower case of value of NS. Default is 'foo'."
     },
-    "PeerRequesterId": {
+    "VpcId": {
       "Type": "String",
       "Default": "",
-      "Description": "VPC ID of the requester VPC."
+      "Description": "VPC ID of the VPC peer requester."
     },
-    "PeerRequesterCidrBlock": {
+    "CidrBlock": {
       "Type": "String",
       "Default": "10.0.0.0/16",
-      "Description": "CIDR Block of the requester VPC.",
+      "Description": "CIDR Block of the VPC peer requester.",
       "MinLength": "9",
       "MaxLength": "18",
       "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
       "ConstraintDescription": "Must be a valid IP CIDR range of the form x.x.x.x/x."
     },
-    "PeerRequesterRouteTableId": {
+    "RouteTableId": {
       "Type": "String",
       "Default": "",
-      "Description": "Route Table ID of the owner of the requester VPC."
+      "Description": "Route Table ID of the VPC peer requester."
     },
-    "PeerAccepterId": {
+    "PeeringVpcId": {
       "Type": "String",
       "Default": "",
-      "Description": "VPC ID of the accepter VPC."
+      "Description": "VPC ID of the VPC peer accepter."
     },
-    "PeerAccepterRegion": {
+    "PeeringRegion": {
       "Type": "String",
       "Default": "",
-      "Description": "Region code for the accepter VPC."
+      "Description": "Region code of the VPC peer accepter."
     },
-    "PeerAccepterAccountId": {
+    "PeeringAccountId": {
       "Type": "String",
       "Default": "",
-      "Description": "AWS Account ID of the owner of the accepter VPC."
+      "Description": "AWS Account ID of the owner of the VPC peer accepter."
     },
-    "PeerAccepterRoleArn": {
+    "PeeringRoleArn": {
       "Type": "String",
       "Default": "",
-      "Description": "Amazon Resource Name (ARN) of the VPC peer role for the peering connection in another AWS account."
+      "Description": "Amazon Resource Name (ARN) of the VPC peer role of accepter."
     },
-    "PeerAccepterCidrBlock": {
+    "PeeringCidrBlock": {
       "Type": "String",
       "Default": "10.0.0.0/16",
-      "Description": "CIDR Block of the accepter VPC.",
+      "Description": "CIDR Block of the VPC peer accepter.",
       "MinLength": "9",
       "MaxLength": "18",
       "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
       "ConstraintDescription": "Must be a valid IP CIDR range of the form x.x.x.x/x."
     },
-    "PeerAccepterSqsQueueUrl": {
+    "PeeringSqsQueueUrl": {
       "Type": "String",
       "Default": "",
-      "Description": "AWS SQS quere URL of the accepter."
+      "Description": "SQS queue URL of the VPC peer accepter."
     }
   },
   "Outputs": {
