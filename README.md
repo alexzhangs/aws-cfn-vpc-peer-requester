@@ -41,3 +41,15 @@ this stack.
 
 For the input parameters and the detail of the template, please check the template
 file.
+
+## Troubleshooting
+
+1. The VPC peer connection is active but connecting to the IP of the
+  resource in the peering VPC is timeout.
+
+  Check following AWS resources on the console:
+
+     1. CloudWatch -> Logs, check the log of Lambda execution.
+     2. VPC -> Route Tables -> Routes.
+     3. Lambda - Functions.
+     4. IAM - Role.
