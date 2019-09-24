@@ -110,7 +110,7 @@
           "        response = {}",
           "        if request_type == 'Create':",
           "            logger.info('Sending SQS message to create peer route')",
-          "            sqs = boto3.client('sqs')",
+          "            sqs = boto3.client('sqs', region_name=properties['Region'])",
           "            response = sqs.send_message(",
           "                QueueUrl=properties['PeeringSqsQueueUrl'],",
           "                MessageBody=json.dumps(msg)",
@@ -159,6 +159,9 @@
         },
         "PeerConnectionId": {
           "Ref": "PeerConnection"
+        },
+        "Region": {
+          "Ref": "PeeringRegion"
         }
       },
       "DependsOn": [
