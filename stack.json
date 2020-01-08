@@ -5,53 +5,31 @@
     "PeerConnection": {
       "Type": "AWS::EC2::VPCPeeringConnection",
       "Properties": {
-        "VpcId": {
-          "Ref": "VpcId"
-        },
-        "PeerVpcId": {
-          "Ref": "PeeringVpcId"
-        },
-        "PeerRegion": {
-          "Ref": "PeeringRegion"
-        },
-        "PeerOwnerId": {
-          "Ref": "PeeringAccountId"
-        },
-        "PeerRoleArn": {
-          "Ref": "PeeringRoleArn"
-        }
+        "VpcId": {"Ref": "VpcId"},
+        "PeerVpcId": {"Ref": "PeeringVpcId"},
+        "PeerRegion": {"Ref": "PeeringRegion"},
+        "PeerOwnerId": {"Ref": "PeeringAccountId"},
+        "PeerRoleArn": {"Ref": "PeeringRoleArn"}
       }
     },
     "PeerRoute": {
       "Type": "AWS::EC2::Route",
       "Properties": {
-        "VpcPeeringConnectionId": {
-          "Ref": "PeerConnection"
-        },
-        "DestinationCidrBlock": {
-          "Ref": "PeeringCidrBlock"
-        },
-        "RouteTableId": {
-          "Ref": "RouteTableId"
-        }
-      },
+        "VpcPeeringConnectionId": {"Ref": "PeerConnection"},
+        "DestinationCidrBlock": {"Ref": "PeeringCidrBlock"},
+        "RouteTableId": {"Ref": "RouteTableId"}
+      }
     },
-    "LambdaExecutionRole": {
+    "LambdaPeeringRouteQueuePublisherExecutionRole": {
       "Type": "AWS::IAM::Role",
       "Properties": {
         "AssumeRolePolicyDocument": {
           "Version": "2012-10-17",
           "Statement": [
             {
-            "Effect": "Allow",
-              "Principal": {
-                "Service": [
-                  "lambda.amazonaws.com"
-                ]
-              },
-              "Action": [
-                "sts:AssumeRole"
-              ]
+              "Effect": "Allow",
+              "Principal": {"Service": ["lambda.amazonaws.com"]},
+              "Action": ["sts:AssumeRole"]
             }
           ]
         },
@@ -59,15 +37,13 @@
         "Path": "/",
         "Policies": [
           {
-            "PolicyName": "root",
+            "PolicyName": "default",
             "PolicyDocument": {
               "Version": "2012-10-17",
               "Statement": [
                 {
                   "Effect": "Allow",
-                  "Action": [
-                    "sqs:SendMessage"
-                  ],
+                  "Action": ["sqs:SendMessage"],
                   "Resource": "*"
                 }
               ]
@@ -122,36 +98,18 @@
         "Handler": "index.lambda_handler",
         "Runtime": "python2.7",
         "Timeout": "15",
-        "Role": {
-          "Fn::GetAtt": [
-            "LambdaExecutionRole",
-            "Arn"
-          ]
-        }
-      },
+        "Role": {"Fn::GetAtt": ["LambdaPeeringRouteQueuePublisherExecutionRole", "Arn"]}
+      }
     },
     "CustomResource": {
       "Type": "AWS::CloudFormation::CustomResource",
       "Properties": {
-        "ServiceToken": {
-          "Fn::GetAtt": [
-            "LambdaPeeringRouteQueuePublisher",
-            "Arn"
-          ]
-        },
-        "PeeringSqsQueueUrl": {
-          "Ref": "PeeringSqsQueueUrl"
-        },
-        "CidrBlock": {
-          "Ref": "CidrBlock"
-        },
-        "PeerConnectionId": {
-          "Ref": "PeerConnection"
-        },
-        "Region": {
-          "Ref": "PeeringRegion"
-        }
-      },
+        "ServiceToken": {"Fn::GetAtt": ["LambdaPeeringRouteQueuePublisher", "Arn"]},
+        "PeeringSqsQueueUrl": {"Ref": "PeeringSqsQueueUrl"},
+        "CidrBlock": {"Ref": "CidrBlock"},
+        "PeerConnectionId": {"Ref": "PeerConnection"},
+        "Region": {"Ref": "PeeringRegion"}
+      }
     }
   },
   "Parameters": {
@@ -211,9 +169,7 @@
   },
   "Outputs": {
     "PeerConnectionId": {
-      "Value": {
-        "Ref": "PeerConnection"
-      }
+      "Value": {"Ref": "PeerConnection"}
     }
   }
 }
