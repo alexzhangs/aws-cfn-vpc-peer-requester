@@ -161,16 +161,6 @@
     }
   },
   "Parameters": {
-    "NS": {
-      "Type": "String",
-      "Default": "Foo",
-      "Description": "Enter a Name Space for Stack. Default is 'Foo'."
-    },
-    "NSLowerCase": {
-      "Type": "String",
-      "Default": "foo",
-      "Description": "Lower case of value of NS. Default is 'foo'."
-    },
     "VpcId": {
       "Type": "String",
       "Default": "",
