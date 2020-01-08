@@ -44,6 +44,15 @@ file.
 
 ## Troubleshooting
 
+1. CloudFormation Event: PeerConnection CREATE_FAILED: VpcPeeringConnection failed to stabilize. State: [failed]
+
+  Check following input parameters, make sure they were set right:
+
+    1. VpcPeerAccepterVpcId
+    2. VpcPeerAccepterRegion
+    3. VpcPeerAccepterAccountId
+    4. VpcPeerAccepterRoleArn
+
 1. The VPC peer connection is active but connecting to the IP of the
   resource in the peering VPC is timeout.
 
