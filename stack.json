@@ -35,9 +35,6 @@
           "Ref": "RouteTableId"
         }
       },
-      "DependsOn": [
-        "PeerConnection"
-      ]
     },
     "LambdaExecutionRole": {
       "Type": "AWS::IAM::Role",
@@ -138,9 +135,6 @@
           ]
         }
       },
-      "DependsOn": [
-        "LambdaExecutionRole"
-      ]
     },
     "CustomResource": {
       "Type": "AWS::CloudFormation::CustomResource",
@@ -164,10 +158,6 @@
           "Ref": "PeeringRegion"
         }
       },
-      "DependsOn": [
-        "LambdaPeeringRouteQueuePublisher",
-        "PeerConnection"
-      ]
     }
   },
   "Parameters": {
