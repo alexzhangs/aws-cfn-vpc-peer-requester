@@ -1,6 +1,6 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "AWS CloudFormation Template to create neccesary resources for the requester of VPC peer connection.",
+  "Description": "AWS CloudFormation Template to create necessary resources for the requester of VPC peer connection.",
   "Resources": {
     "PeerConnection": {
       "Type": "AWS::EC2::VPCPeeringConnection",
